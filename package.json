@@ -106,6 +106,10 @@
     "dmg": {
       "title": "Local NotebookLM",
       "writeUpdateInfo": false
+    },
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
     }
   }
 }

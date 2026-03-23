@@ -9,8 +9,27 @@ permissions:
   contents: write
 
 jobs:
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+
   build-mac:
     name: Build macOS DMG
+    needs: create-release
     runs-on: macos-latest
 
     steps:
@@ -32,20 +51,15 @@ jobs:
         run: npm ci
 
       - name: Build DMG
-        run: npm run electron:build:dmg -- --publish never
+        run: npm run electron:build:dmg
         env:
           PYTHON_BIN: python3.13
           CSC_IDENTITY_AUTO_DISCOVERY: false
-
-      - name: Upload DMG artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dmg-${{ github.ref_name }}
-          path: release/**/*.dmg
-          if-no-files-found: error
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-windows:
     name: Build Windows NSIS
+    needs: create-release
     runs-on: windows-latest
 
     steps:
@@ -67,21 +81,15 @@ jobs:
         run: npm ci
 
       - name: Build NSIS installer
-        run: npm run electron:build:win -- --publish never
+        run: npm run electron:build:win
         env:
-          # On Windows, setup-python exposes Python as 'python'
           PYTHON_BIN: python
           CSC_IDENTITY_AUTO_DISCOVERY: false
-
-      - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: win-${{ github.ref_name }}
-          path: release/**/*.exe
-          if-no-files-found: error
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-linux:
     name: Build Linux AppImage & deb
+    needs: create-release
     runs-on: ubuntu-latest
 
     steps:
@@ -103,35 +111,7 @@ jobs:
         run: npm ci
 
       - name: Build AppImage & deb
-        run: npm run electron:build:linux -- --publish never
+        run: npm run electron:build:linux
         env:
           PYTHON_BIN: python3.13
-
-      - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-${{ github.ref_name }}
-          path: |
-            release/**/*.AppImage
-            release/**/*.deb
-          if-no-files-found: error
-
-  release:
-    name: Create GitHub Release
-    needs: [build-mac, build-windows, build-linux]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download all build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          merge-multiple: true
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: artifacts/**/*
-          generate_release_notes: true
-          draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
