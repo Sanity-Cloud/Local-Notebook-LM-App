@@ -1,0 +1,6 @@
+PyPDF2
+numpy
+soundfile
+openai
+tqdm
+pydantic
