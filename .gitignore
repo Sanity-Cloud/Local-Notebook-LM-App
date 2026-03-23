@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist-electron/
+release/
+
+# Python
+python-packages/
+local_notebooklm/__pycache__/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+*.egg-info/
+.venv/
+venv/
+python-env/
+
+# Electron
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Typescript
+*.tsbuildinfo
+
+.claude/
