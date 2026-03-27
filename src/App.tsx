@@ -293,7 +293,7 @@ function GlassSelect({ options, value, onChange, label, icon: Icon }: {
   }, [])
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative z-50">
       {label && (
         <label className="flex items-center gap-1.5 text-xs font-medium text-foreground-tertiary uppercase tracking-wider mb-1.5">
           {Icon && <Icon className="w-3.5 h-3.5" />}
@@ -316,7 +316,7 @@ function GlassSelect({ options, value, onChange, label, icon: Icon }: {
         <ChevronDown className={cn("w-4 h-4 text-foreground-muted transition-transform", isOpen && "rotate-180")} />
       </button>
       {isOpen && (
-        <div className="absolute z-50 top-full mt-2 w-full glass-panel rounded-xl overflow-hidden animate-scale-in shadow-glass-lg">
+        <div className="absolute z-[100] top-full mt-2 w-full glass-panel rounded-xl overflow-hidden animate-scale-in shadow-glass-lg">
           {options.map(option => (
             <button
               key={option.value}

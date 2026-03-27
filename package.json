@@ -1,6 +1,6 @@
 {
   "name": "local-notebooklm-app",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Beautiful desktop app for Local-NotebookLM PDF to Audio generation",
   "author": "Gökdeniz Gülmez <goekdenizguelmez.ml@gmail.com>",
   "main": "dist-electron/main.js",
@@ -87,7 +87,7 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": ["x64", "arm64"]
         }
       ]
     },
