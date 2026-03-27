@@ -429,7 +429,8 @@ export default function App() {
 
   // File & Generation State
   const [pdfFile, setPdfFile] = useState<PdfFile | null>(null)
-  const [isGenerating, setIsGenerating] = useState(false)
+  const [activeJobCount, setActiveJobCount] = useState(0)
+  const isGenerating = activeJobCount > 0
   const [progress, setProgress] = useState<GenerationProgress[]>([])
   const [generatedAudio, setGeneratedAudio] = useState<{ path: string; name: string; outputDir?: string } | null>(null)
   const [dragOver, setDragOver] = useState(false)
@@ -533,7 +534,7 @@ export default function App() {
       settings: { ...settings },
     }
     setHistory(prev => [newJob, ...prev])
-    setIsGenerating(true)
+    setActiveJobCount(c => c + 1)
     setProgress([])
     setGeneratedAudio(null)
     setActiveTab('player')
@@ -563,7 +564,7 @@ export default function App() {
       ))
       setProgress(prev => [...prev, { type: 'error', message: String(error), timestamp: Date.now() }])
     } finally {
-      setIsGenerating(false)
+      setActiveJobCount(c => Math.max(0, c - 1))
     }
   }
 
@@ -712,8 +713,8 @@ export default function App() {
                   <GlassButton variant="secondary" onClick={() => setActiveTab('upload')}>
                     Back
                   </GlassButton>
-                  <GlassButton onClick={handleGenerate} disabled={isGenerating} icon={isGenerating ? undefined : Sparkles}>
-                    {isGenerating ? 'Generating...' : 'Generate'}
+                  <GlassButton onClick={handleGenerate} icon={Sparkles}>
+                    Generate
                   </GlassButton>
                 </div>
               </div>
