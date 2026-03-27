@@ -65,7 +65,7 @@ interface GenerationSettings {
 }
 
 interface GenerationProgress {
-  type: 'info' | 'error'
+  type: 'info' | 'error' | 'step'
   message: string
   timestamp: number
 }
@@ -268,6 +268,54 @@ function GlassInput({ label, value, onChange, type = 'text', placeholder, icon: 
           )}
         />
       </div>
+    </div>
+  )
+}
+
+// Terminal-style log panel
+function LogPanel({ progress }: { progress: GenerationProgress[] }) {
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [progress])
+
+  const formatTime = (ts: number) => {
+    const d = new Date(ts)
+    return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  }
+
+  const icon = (type: GenerationProgress['type']) => {
+    if (type === 'error') return '✖'
+    if (type === 'step') return '▶'
+    return '·'
+  }
+
+  return (
+    <div
+      className="px-4 py-3 max-h-64 overflow-y-auto font-mono text-xs leading-relaxed"
+      style={{ background: 'rgba(0,0,0,0.03)' }}
+    >
+      {progress.length === 0 ? (
+        <span className="text-foreground-muted italic">Waiting for output...</span>
+      ) : (
+        progress.map((p, i) => (
+          <div
+            key={i}
+            className={cn(
+              "flex gap-3 py-0.5 animate-fade-in",
+              p.type === 'error' ? "text-error" : p.type === 'step' ? "text-accent font-medium" : "text-foreground-secondary"
+            )}
+          >
+            <span className="shrink-0 text-foreground-muted select-none">{formatTime(p.timestamp)}</span>
+            <span className={cn("shrink-0 select-none", p.type === 'error' ? "text-error" : p.type === 'step' ? "text-accent" : "text-foreground-muted")}>
+              {icon(p.type)}
+            </span>
+            <span className="break-all whitespace-pre-wrap">{p.message}</span>
+          </div>
+        ))
+      )}
+      <div ref={bottomRef} />
     </div>
   )
 }
@@ -880,19 +928,16 @@ export default function App() {
                 )}
               </GlassCard>
 
-              {progress.length > 0 && (
-                <GlassCard className="p-4" intensity="light">
-                  <h3 className="text-sm font-medium text-foreground-tertiary mb-3">Progress Log</h3>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {progress.map((p, i) => (
-                      <div key={i} className={cn(
-                        "text-sm px-3 py-2 rounded-lg backdrop-blur-sm",
-                        p.type === 'error' ? "bg-error/10 text-error" : "bg-white/20 dark:bg-white/5 text-foreground-secondary"
-                      )}>
-                        {p.message}
-                      </div>
-                    ))}
+              {(progress.length > 0 || isGenerating) && (
+                <GlassCard className="p-0 overflow-hidden" intensity="light">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-white/20 dark:border-white/10">
+                    <div className="flex items-center gap-2">
+                      <div className={cn("w-2 h-2 rounded-full", isGenerating ? "bg-accent animate-pulse" : "bg-success")} />
+                      <span className="text-xs font-semibold uppercase tracking-widest text-foreground-tertiary">Backend Logs</span>
+                    </div>
+                    <span className="text-xs text-foreground-muted">{progress.length} line{progress.length !== 1 ? 's' : ''}</span>
                   </div>
+                  <LogPanel progress={progress} />
                 </GlassCard>
               )}
             </div>
