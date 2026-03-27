@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Upload,
   FileText,
@@ -279,8 +280,23 @@ function GlassSelect({ options, value, onChange, label, icon: Icon }: {
   icon?: React.ElementType
 }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
   const selected = options.find(o => o.value === value)
   const containerRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  const updatePosition = useCallback(() => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      setDropdownStyle({
+        position: 'fixed',
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+        zIndex: 99999,
+      })
+    }
+  }, [])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -292,8 +308,20 @@ function GlassSelect({ options, value, onChange, label, icon: Icon }: {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  useEffect(() => {
+    if (isOpen) {
+      updatePosition()
+      window.addEventListener('scroll', updatePosition, true)
+      window.addEventListener('resize', updatePosition)
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true)
+        window.removeEventListener('resize', updatePosition)
+      }
+    }
+  }, [isOpen, updatePosition])
+
   return (
-    <div ref={containerRef} className="relative z-50">
+    <div ref={containerRef} className="relative">
       {label && (
         <label className="flex items-center gap-1.5 text-xs font-medium text-foreground-tertiary uppercase tracking-wider mb-1.5">
           {Icon && <Icon className="w-3.5 h-3.5" />}
@@ -301,6 +329,7 @@ function GlassSelect({ options, value, onChange, label, icon: Icon }: {
         </label>
       )}
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "w-full px-4 py-2.5 rounded-xl text-sm text-left",
@@ -315,8 +344,8 @@ function GlassSelect({ options, value, onChange, label, icon: Icon }: {
         <span className="capitalize text-foreground">{selected?.label}</span>
         <ChevronDown className={cn("w-4 h-4 text-foreground-muted transition-transform", isOpen && "rotate-180")} />
       </button>
-      {isOpen && (
-        <div className="absolute z-[100] top-full mt-2 w-full glass-panel rounded-xl overflow-hidden animate-scale-in shadow-glass-lg">
+      {isOpen && createPortal(
+        <div style={dropdownStyle} className="glass-panel rounded-xl overflow-hidden animate-scale-in shadow-glass-lg">
           {options.map(option => (
             <button
               key={option.value}
@@ -334,7 +363,8 @@ function GlassSelect({ options, value, onChange, label, icon: Icon }: {
               <span className="capitalize">{option.label}</span>
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
@@ -670,8 +700,8 @@ export default function App() {
               </GlassCard>
 
               {/* Settings Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <GlassCard className="p-5" intensity="light">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 overflow-visible">
+                <GlassCard className="p-5 overflow-visible" intensity="light">
                   <GlassSelect
                     label="Style"
                     icon={Sparkles}
@@ -684,7 +714,7 @@ export default function App() {
                   </p>
                 </GlassCard>
 
-                <GlassCard className="p-5" intensity="light">
+                <GlassCard className="p-5 overflow-visible" intensity="light">
                   <GlassSelect
                     label="Length"
                     options={LENGTHS.map(l => ({ value: l, label: l }))}
@@ -696,7 +726,7 @@ export default function App() {
                   </p>
                 </GlassCard>
 
-                <GlassCard className="p-5" intensity="light">
+                <GlassCard className="p-5 overflow-visible" intensity="light">
                   <GlassSelect
                     label="Language"
                     options={LANGUAGES.map(l => ({ value: l, label: l }))}
