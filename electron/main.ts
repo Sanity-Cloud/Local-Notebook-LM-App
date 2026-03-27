@@ -79,58 +79,44 @@ function canRunPython(command: string, args: string[] = []): boolean {
   }
 }
 
-// Detect the Python version tag (e.g. "3.13") from compiled .so files in the
-// bundled python-packages directory.  Returns null when not determinable.
-function getBundledPythonVersion(): string | null {
-  if (!app.isPackaged) return null
-  const packagesDir = path.join(process.resourcesPath, 'python-packages')
-  if (!fs.existsSync(packagesDir)) return null
+// Get the bundled Python runtime path
+function getBundledPythonPath(): string | null {
+  // In packaged app, Python runtime is in resources/python-runtime
+  if (app.isPackaged) {
+    const runtimePath = path.join(process.resourcesPath, 'python-runtime')
+    const pythonExe = process.platform === 'win32'
+      ? path.join(runtimePath, 'python.exe')
+      : path.join(runtimePath, 'bin', 'python3')
 
-  function findVersionTag(dir: string, depth = 0): string | null {
-    if (depth > 5) return null
-    try {
-      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-        if (entry.isDirectory()) {
-          const result = findVersionTag(path.join(dir, entry.name), depth + 1)
-          if (result) return result
-        } else if (entry.name.endsWith('.so')) {
-          const match = entry.name.match(/\.cpython-(\d+)-/)
-          if (match) return match[1]
-        }
-      }
-    } catch { /* ignore */ }
-    return null
+    if (fs.existsSync(pythonExe)) {
+      return pythonExe
+    }
   }
 
-  const tag = findVersionTag(packagesDir)
-  if (!tag || tag.length < 2) return null
-  // "313" → "3.13", "312" → "3.12"
-  return `${tag[0]}.${tag.slice(1)}`
+  // In development, check for locally bundled python-runtime
+  const devRuntimePath = path.join(__dirname, '..', 'python-runtime')
+  const devPythonExe = process.platform === 'win32'
+    ? path.join(devRuntimePath, 'python.exe')
+    : path.join(devRuntimePath, 'bin', 'python3')
+
+  if (fs.existsSync(devPythonExe)) {
+    return devPythonExe
+  }
+
+  return null
 }
 
-// Detect Python executable
+// Detect Python executable - prefer bundled, fallback to system
 function getPythonCommand(): PythonCommand {
-  const candidates: PythonCommand[] = []
-
-  if (app.isPackaged && process.platform === 'darwin') {
-    const requiredVersion = getBundledPythonVersion()
-
-    const prefixes = ['/opt/homebrew/bin', '/usr/local/bin', '/usr/bin']
-
-    if (requiredVersion) {
-      // Prefer an exact-version binary that matches the compiled packages
-      for (const prefix of prefixes) {
-        const p = `${prefix}/python${requiredVersion}`
-        if (fs.existsSync(p)) candidates.push({ command: p, args: [] })
-      }
-    }
-
-    // Fall back to generic python3 paths
-    for (const prefix of prefixes) {
-      const p = `${prefix}/python3`
-      if (fs.existsSync(p)) candidates.push({ command: p, args: [] })
-    }
+  // First try the bundled Python runtime
+  const bundledPython = getBundledPythonPath()
+  if (bundledPython && canRunPython(bundledPython)) {
+    console.log('Using bundled Python:', bundledPython)
+    return { command: bundledPython, args: [] }
   }
+
+  // Fallback to system Python
+  const candidates: PythonCommand[] = []
 
   if (process.platform === 'win32') {
     candidates.push(
@@ -147,13 +133,15 @@ function getPythonCommand(): PythonCommand {
 
   for (const candidate of candidates) {
     if (canRunPython(candidate.command, candidate.args)) {
+      console.log('Using system Python:', candidate.command)
       return candidate
     }
   }
 
-  return process.platform === 'win32'
-    ? { command: 'py', args: ['-3'] }
-    : { command: 'python3', args: [] }
+  // Last resort - return a default that will fail with helpful error
+  throw new Error(
+    'Python not found. The app requires Python to be installed, or it should be bundled with the app.'
+  )
 }
 
 function createWindow() {
@@ -344,7 +332,16 @@ ipcMain.handle('generate-audio', async (event, params) => {
     fs.mkdirSync(outputPath, { recursive: true })
   }
 
-  const python = getPythonCommand()
+  // Get Python command - handle errors gracefully
+  let python: PythonCommand
+  try {
+    python = getPythonCommand()
+  } catch (error) {
+    return {
+      success: false,
+      error: 'Python runtime not found. Please ensure Python is installed on your system, or use the bundled version of this app.',
+    }
+  }
 
   const args = [
     ...python.args,
@@ -372,28 +369,46 @@ ipcMain.handle('generate-audio', async (event, params) => {
   }
 
   return new Promise((resolve, reject) => {
-    // Spawn Python with proper environment
+    // Determine Python paths
+    const isBundled = !!getBundledPythonPath()
+    const pythonPackagesDir = app.isPackaged
+      ? path.join(process.resourcesPath, 'python-packages')
+      : path.join(__dirname, '..', 'python-packages')
+
     const pythonPathEntries = [
-      app.isPackaged ? path.join(process.resourcesPath, 'python-packages') : '',
-      app.isPackaged ? process.resourcesPath : '',
+      pythonPackagesDir,
+      isBundled
+        ? (app.isPackaged
+            ? path.join(process.resourcesPath, 'python-runtime', 'lib', 'python3.13')
+            : path.join(__dirname, '..', 'python-runtime', 'lib', 'python3.13'))
+        : '',
       process.env.PYTHONPATH || '',
     ].filter(Boolean)
 
-    const pythonProcess = spawn(python.command, args, {
-      env: {
-        ...process.env,
-        PYTHONUNBUFFERED: '1',
-        PYTHONPATH: pythonPathEntries.join(path.delimiter),
-        LLM_API_URL: appConfig.llmApiUrl,
-        LLM_API_KEY: appConfig.llmApiKey || 'not-needed',
-        TTS_API_URL: appConfig.ttsApiUrl,
-        TTS_API_KEY: appConfig.ttsApiKey || 'not-needed',
-        TTS_MODEL: appConfig.ttsModel || 'kokoro',
-        TTS_VOICE_MODEL: appConfig.ttsVoiceModel || 'alloy',
-        SPEAKER_VOICES: JSON.stringify(appConfig.speakerVoices || {}),
-      },
-      shell: false,
-    })
+    // Set up environment
+    const env: Record<string, string> = {
+      ...process.env,
+      PYTHONUNBUFFERED: '1',
+      PYTHONPATH: pythonPathEntries.join(path.delimiter),
+      PYTHONNOUSERSITE: '1',
+      LLM_API_URL: appConfig.llmApiUrl,
+      LLM_API_KEY: appConfig.llmApiKey || 'not-needed',
+      TTS_API_URL: appConfig.ttsApiUrl,
+      TTS_API_KEY: appConfig.ttsApiKey || 'not-needed',
+      TTS_MODEL: appConfig.ttsModel || 'kokoro',
+      TTS_VOICE_MODEL: appConfig.ttsVoiceModel || 'alloy',
+      SPEAKER_VOICES: JSON.stringify(appConfig.speakerVoices || {}),
+    }
+
+    // For bundled Python, set HOME to app data dir to avoid permission issues
+    if (isBundled) {
+      env.HOME = APP_DATA_DIR
+      env.PYTHONHOME = app.isPackaged
+        ? path.join(process.resourcesPath, 'python-runtime')
+        : path.join(__dirname, '..', 'python-runtime')
+    }
+
+    const pythonProcess = spawn(python.command, args, { env, shell: false })
 
     let stdout = ''
     let stderr = ''

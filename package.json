@@ -59,9 +59,14 @@
     ],
     "extraResources": [
       {
+        "from": "python-runtime",
+        "to": "python-runtime",
+        "filter": ["**/*", "!**/__pycache__/**", "!**/*.pyc"]
+      },
+      {
         "from": "python-packages",
         "to": "python-packages",
-        "filter": ["**/*", "!**/__pycache__/**", "!**/*.pyc"]
+        "filter": ["**/*", "!**/__pycache__/**", "!**/*.pyc", "!python-runtime/**"]
       },
       {
         "from": "local_notebooklm",

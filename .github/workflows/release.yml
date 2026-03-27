@@ -50,12 +50,37 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Bundle Python Runtime
+        run: npm run bundle-python
+        env:
+          PYTHON_BIN: python3.13
+
       - name: Build DMG
         run: npm run electron:build:dmg
         env:
           PYTHON_BIN: python3.13
+          # For unsigned builds, we need to disable gatekeeper checks locally
+          # but apps from GitHub Actions need proper notarization for distribution
           CSC_IDENTITY_AUTO_DISCOVERY: false
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Build
+        run: |
+          ls -la release/
+          # Check if the app bundle was created
+          if [ -d "release/mac-*/Local NotebookLM.app" ]; then
+            echo "App bundle created successfully"
+            # List the contents of Resources to verify Python is included
+            find release -name "python-packages" -type d | head -5
+            find release -name "python-runtime" -type d | head -5
+          fi
+
+      - name: Upload artifacts to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/**/*.dmg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-windows:
     name: Build Windows NSIS

@@ -8,6 +8,7 @@ release/
 
 # Python
 python-packages/
+python-runtime/
 local_notebooklm/__pycache__/
 **/__pycache__/
 **/*.pyc
