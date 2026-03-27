@@ -377,11 +377,6 @@ ipcMain.handle('generate-audio', async (event, params) => {
 
     const pythonPathEntries = [
       pythonPackagesDir,
-      isBundled
-        ? (app.isPackaged
-            ? path.join(process.resourcesPath, 'python-runtime', 'lib', 'python3.13')
-            : path.join(__dirname, '..', 'python-runtime', 'lib', 'python3.13'))
-        : '',
       process.env.PYTHONPATH || '',
     ].filter(Boolean)
 
