@@ -59,10 +59,24 @@ jobs:
         run: npm run electron:build:dmg
         env:
           PYTHON_BIN: python3.13
-          # For unsigned builds, we need to disable gatekeeper checks locally
-          # but apps from GitHub Actions need proper notarization for distribution
           CSC_IDENTITY_AUTO_DISCOVERY: false
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Ad-hoc sign app bundles
+        run: |
+          for arch in mac mac-arm64 mac-x64 mac-universal; do
+            APP="release/$arch/Local NotebookLM.app"
+            if [ -d "$APP" ]; then
+              echo "Signing $APP"
+              codesign --force --deep --sign - "$APP"
+            fi
+          done
+
+      - name: Strip quarantine from DMGs
+        run: |
+          find release -name "*.dmg" | while read dmg; do
+            xattr -c "$dmg" || true
+          done
 
       - name: Verify Build
         run: |
