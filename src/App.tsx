@@ -70,6 +70,11 @@ interface GenerationProgress {
   timestamp: number
 }
 
+interface TranscriptEntry {
+  speaker: string
+  text: string
+}
+
 interface HistoryJob {
   id: string
   pdfName: string
@@ -467,6 +472,115 @@ function GlassSelect({ options, value, onChange, label, icon: Icon }: {
   )
 }
 
+// Transcript editor component
+function TranscriptEditor({
+  transcript,
+  onChange,
+  onRegenerate,
+  isRegenerating,
+}: {
+  transcript: TranscriptEntry[]
+  onChange: (t: TranscriptEntry[]) => void
+  onRegenerate: () => void
+  isRegenerating: boolean
+}) {
+  const updateEntry = (i: number, field: 'speaker' | 'text', value: string) => {
+    const updated = transcript.map((e, idx) => idx === i ? { ...e, [field]: value } : e)
+    onChange(updated)
+  }
+
+  const addEntry = (afterIndex: number) => {
+    const prev = transcript[afterIndex]
+    const speakers = [...new Set(transcript.map(e => e.speaker))]
+    const nextSpeaker = speakers.find(s => s !== prev?.speaker) || prev?.speaker || 'Speaker 1'
+    const updated = [...transcript]
+    updated.splice(afterIndex + 1, 0, { speaker: nextSpeaker, text: '' })
+    onChange(updated)
+  }
+
+  const removeEntry = (i: number) => {
+    onChange(transcript.filter((_, idx) => idx !== i))
+  }
+
+  const speakerColors: Record<string, string> = {}
+  const palette = ['text-blue-500', 'text-purple-500', 'text-orange-500', 'text-green-500', 'text-pink-500', 'text-yellow-500']
+  transcript.forEach(e => {
+    if (!speakerColors[e.speaker]) {
+      speakerColors[e.speaker] = palette[Object.keys(speakerColors).length % palette.length]
+    }
+  })
+
+  return (
+    <div className="space-y-2">
+      {transcript.map((entry, i) => (
+        <div key={i} className="group relative">
+          <div className={cn(
+            "rounded-2xl border border-white/20 dark:border-white/10 p-4 transition-all duration-200",
+            "backdrop-blur-[20px] bg-white/50 dark:bg-black/30",
+            "hover:bg-white/65 dark:hover:bg-black/40 hover:shadow-md"
+          )}>
+            <div className="flex items-center gap-2 mb-2">
+              <input
+                value={entry.speaker}
+                onChange={e => updateEntry(i, 'speaker', e.target.value)}
+                className={cn(
+                  "text-xs font-bold uppercase tracking-widest bg-transparent border-none outline-none w-32",
+                  speakerColors[entry.speaker] ?? 'text-accent'
+                )}
+              />
+              <span className="text-foreground-muted text-xs">#{i + 1}</span>
+              <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                <button
+                  onClick={() => addEntry(i)}
+                  title="Insert line after"
+                  className="p-1 rounded-lg hover:bg-accent/10 text-accent text-xs transition-colors"
+                >＋</button>
+                <button
+                  onClick={() => removeEntry(i)}
+                  title="Delete"
+                  className="p-1 rounded-lg hover:bg-error/10 text-error text-xs transition-colors"
+                >✕</button>
+              </div>
+            </div>
+            <textarea
+              value={entry.text}
+              onChange={e => updateEntry(i, 'text', e.target.value)}
+              rows={Math.max(2, Math.ceil(entry.text.length / 80))}
+              className={cn(
+                "w-full bg-transparent border-none outline-none resize-none text-sm text-foreground leading-relaxed",
+                "placeholder:text-foreground-muted"
+              )}
+              placeholder="Enter dialogue..."
+            />
+          </div>
+        </div>
+      ))}
+
+      <button
+        onClick={() => addEntry(transcript.length - 1)}
+        className={cn(
+          "w-full py-3 rounded-2xl border-2 border-dashed border-white/30 dark:border-white/15",
+          "text-sm text-foreground-muted hover:text-foreground hover:border-accent/40 hover:bg-accent/5",
+          "transition-all duration-200"
+        )}
+      >
+        + Add line
+      </button>
+
+      <div className="sticky bottom-0 pt-2">
+        <GlassButton
+          onClick={onRegenerate}
+          disabled={isRegenerating}
+          icon={isRegenerating ? undefined : Sparkles}
+          className="w-full justify-center"
+        >
+          {isRegenerating ? 'Regenerating Audio...' : 'Regenerate Audio from Transcript'}
+        </GlassButton>
+      </div>
+    </div>
+  )
+}
+
 // Main App
 export default function App() {
   useAutoTheme() // Auto-detect system theme
@@ -481,6 +595,8 @@ export default function App() {
   const isGenerating = activeJobCount > 0
   const [progress, setProgress] = useState<GenerationProgress[]>([])
   const [generatedAudio, setGeneratedAudio] = useState<{ path: string; name: string; outputDir?: string } | null>(null)
+  const [transcript, setTranscript] = useState<TranscriptEntry[] | null>(null)
+  const [playerTab, setPlayerTab] = useState<'audio' | 'transcript'>('audio')
   const [dragOver, setDragOver] = useState(false)
 
   // Settings
@@ -585,6 +701,7 @@ export default function App() {
     setActiveJobCount(c => c + 1)
     setProgress([])
     setGeneratedAudio(null)
+    setTranscript(null)
     setActiveTab('player')
 
     try {
@@ -603,6 +720,11 @@ export default function App() {
         setHistory(prev => prev.map(j =>
           j.id === jobId ? { ...j, status: 'done', audioPath: result.outputPath, outputDir: result.outputDir || '' } : j
         ))
+        // Auto-load transcript
+        if (result.outputDir) {
+          const tr = await window.electronAPI.readTranscript(result.outputDir)
+          if (tr.success && tr.transcript) setTranscript(tr.transcript)
+        }
       } else {
         throw new Error(result.message || 'Generation failed')
       }
@@ -620,6 +742,57 @@ export default function App() {
     if (!window.electronAPI) return
     await window.electronAPI.saveConfig(config)
     setShowConfig(false)
+  }
+
+  const handleRegenerateFromTranscript = async () => {
+    if (!transcript || !generatedAudio?.outputDir || !window.electronAPI) return
+    // Save edited transcript first
+    await window.electronAPI.saveTranscript(generatedAudio.outputDir, transcript)
+    const transcriptFile = `${generatedAudio.outputDir}/transcript.json`
+
+    const jobId = Date.now().toString()
+    setHistory(prev => [{
+      id: jobId,
+      pdfName: pdfFile?.name || 'transcript',
+      pdfPath: pdfFile?.path || '',
+      outputDir: '',
+      status: 'generating',
+      timestamp: Date.now(),
+      settings: { ...settings },
+    }, ...prev])
+    setActiveJobCount(c => c + 1)
+    setProgress([])
+    setGeneratedAudio(null)
+    setPlayerTab('audio')
+
+    try {
+      const result = await window.electronAPI.generateAudio({
+        pdfPath: pdfFile?.path || '',
+        outputDir: generatedAudio.outputDir,
+        transcriptFile,
+        ...settings,
+        config,
+      })
+      if (result.success && result.outputPath) {
+        setGeneratedAudio({
+          path: result.outputPath,
+          name: result.fileName || 'audio.wav',
+          outputDir: result.outputDir,
+        })
+        setHistory(prev => prev.map(j =>
+          j.id === jobId ? { ...j, status: 'done', audioPath: result.outputPath, outputDir: result.outputDir || '' } : j
+        ))
+      } else {
+        throw new Error(result.message || 'Regeneration failed')
+      }
+    } catch (error) {
+      setHistory(prev => prev.map(j =>
+        j.id === jobId ? { ...j, status: 'error', errorMessage: String(error) } : j
+      ))
+      setProgress(prev => [...prev, { type: 'error', message: String(error), timestamp: Date.now() }])
+    } finally {
+      setActiveJobCount(c => Math.max(0, c - 1))
+    }
   }
 
   const handleSelectOutputDir = async () => {
@@ -909,24 +1082,68 @@ export default function App() {
                 )}
               </div>
 
-              <GlassCard className="p-8 sm:p-12" intensity="heavy">
-                {isGenerating ? (
-                  <div className="text-center py-12">
-                    <div className="w-20 h-20 mx-auto mb-8 rounded-full border-4 border-white/20 dark:border-white/10 border-t-accent animate-spin backdrop-blur-sm" />
-                    <p className="text-lg font-medium mb-2">Generating audio...</p>
-                    <p className="text-foreground-muted">
-                      {progress.length > 0 ? progress[progress.length - 1].message : 'Starting up...'}
-                    </p>
-                  </div>
-                ) : generatedAudio ? (
-                  <AudioPlayer audioPath={generatedAudio.path} fileName={generatedAudio.name} />
-                ) : (
-                  <div className="text-center py-12 text-foreground-muted">
-                    <Volume2 className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                    <p>Generate audio to see the player</p>
-                  </div>
-                )}
-              </GlassCard>
+              {/* Tab switcher — only show when we have results */}
+              {(generatedAudio || transcript) && !isGenerating && (
+                <div className="flex gap-1 p-1 rounded-2xl backdrop-blur-[20px] bg-white/40 dark:bg-white/5 border border-white/20 dark:border-white/10 w-fit">
+                  {(['audio', 'transcript'] as const).map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setPlayerTab(tab)}
+                      className={cn(
+                        "px-5 py-2 rounded-xl text-sm font-medium capitalize transition-all duration-200",
+                        playerTab === tab
+                          ? "bg-accent text-white shadow-md shadow-accent/25 scale-[1.02]"
+                          : "text-foreground-secondary hover:text-foreground hover:bg-white/30 dark:hover:bg-white/10"
+                      )}
+                    >
+                      {tab === 'audio' ? '▶ Audio' : '✎ Transcript'}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {playerTab === 'audio' && (
+                <GlassCard className="p-8 sm:p-12" intensity="heavy">
+                  {isGenerating ? (
+                    <div className="text-center py-12">
+                      <div className="w-20 h-20 mx-auto mb-8 rounded-full border-4 border-white/20 dark:border-white/10 border-t-accent animate-spin backdrop-blur-sm" />
+                      <p className="text-lg font-medium mb-2">Generating audio...</p>
+                      <p className="text-foreground-muted">
+                        {progress.length > 0 ? progress[progress.length - 1].message : 'Starting up...'}
+                      </p>
+                    </div>
+                  ) : generatedAudio ? (
+                    <AudioPlayer audioPath={generatedAudio.path} fileName={generatedAudio.name} />
+                  ) : (
+                    <div className="text-center py-12 text-foreground-muted">
+                      <Volume2 className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                      <p>Generate audio to see the player</p>
+                    </div>
+                  )}
+                </GlassCard>
+              )}
+
+              {playerTab === 'transcript' && (
+                <div className="space-y-4">
+                  {transcript ? (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-foreground-muted">{transcript.length} lines · Edit speaker names or dialogue, then regenerate.</p>
+                      </div>
+                      <TranscriptEditor
+                        transcript={transcript}
+                        onChange={setTranscript}
+                        onRegenerate={handleRegenerateFromTranscript}
+                        isRegenerating={isGenerating}
+                      />
+                    </>
+                  ) : (
+                    <GlassCard className="p-12 text-center" intensity="light">
+                      <p className="text-foreground-muted">No transcript available yet. Generate audio first.</p>
+                    </GlassCard>
+                  )}
+                </div>
+              )}
 
               {(progress.length > 0 || isGenerating) && (
                 <GlassCard className="p-0 overflow-hidden" intensity="light">
