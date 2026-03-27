@@ -55,39 +55,41 @@ jobs:
         env:
           PYTHON_BIN: python3.13
 
-      - name: Build DMG
-        run: npm run electron:build:dmg
+      - name: Compile TypeScript + Frontend
+        run: npx tsc && npx vite build
+
+      - name: Build app bundles (no DMG yet)
+        run: npx electron-builder --mac dir --arch arm64,x64
         env:
           PYTHON_BIN: python3.13
           CSC_IDENTITY_AUTO_DISCOVERY: false
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Ad-hoc sign app bundles
         run: |
-          for arch in mac mac-arm64 mac-x64 mac-universal; do
-            APP="release/$arch/Local NotebookLM.app"
-            if [ -d "$APP" ]; then
-              echo "Signing $APP"
-              codesign --force --deep --sign - "$APP"
-            fi
+          find release -name "*.app" -maxdepth 3 -type d | while read app; do
+            echo "Signing: $app"
+            codesign --force --deep --sign - "$app"
+            codesign --verify --deep --strict "$app" && echo "✓ Valid" || echo "⚠ Issue with $app"
           done
 
-      - name: Strip quarantine from DMGs
+      - name: Package signed apps into DMGs
         run: |
-          find release -name "*.dmg" | while read dmg; do
-            xattr -c "$dmg" || true
+          find release -name "*.app" -maxdepth 3 -type d | while read app; do
+            echo "Packaging DMG for: $app"
+            npx electron-builder --mac dmg --prepackaged "$app"
           done
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify Build
         run: |
-          ls -la release/
-          # Check if the app bundle was created
-          if [ -d "release/mac-*/Local NotebookLM.app" ]; then
-            echo "App bundle created successfully"
-            # List the contents of Resources to verify Python is included
-            find release -name "python-packages" -type d | head -5
-            find release -name "python-runtime" -type d | head -5
-          fi
+          echo "=== Release files ==="
+          find release -name "*.dmg" -o -name "*.app" -maxdepth 4 | head -20
+          echo "=== Codesign check on apps ==="
+          find release -name "*.app" -maxdepth 3 -type d | while read app; do
+            codesign -dv "$app" 2>&1 | grep -E "Authority|TeamID|Identifier|Format" || echo "(ad-hoc) $app"
+          done
 
       - name: Upload artifacts to release
         uses: softprops/action-gh-release@v2
