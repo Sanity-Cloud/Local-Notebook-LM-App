@@ -375,27 +375,43 @@ function GlassSelect({ options, value, onChange, label, icon: Icon }: {
           }}
           className="animate-dropdown-in glass-dropdown"
         >
-          {options.map(option => (
-            <button
-              key={option.value}
-              onClick={() => {
-                onChange(option.value)
-                setIsOpen(false)
-              }}
-              style={value === option.value ? {
-                background: 'rgba(0, 122, 255, 0.1)',
-              } : undefined}
-              className={cn(
-                "w-full px-4 py-3 text-left text-sm transition-all duration-150",
-                "hover:bg-white/40",
-                value === option.value
-                  ? "text-accent font-semibold"
-                  : "text-foreground"
-              )}
-            >
-              <span className="capitalize">{option.label}</span>
-            </button>
-          ))}
+          {options.map(option => {
+            const isSelected = value === option.value
+            return (
+              <button
+                key={option.value}
+                onClick={() => {
+                  onChange(option.value)
+                  setIsOpen(false)
+                }}
+                onMouseEnter={e => {
+                  if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0,0,0,0.06)'
+                  ;(e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.02) translateX(2px)'
+                }}
+                onMouseLeave={e => {
+                  if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+                  ;(e.currentTarget as HTMLButtonElement).style.transform = 'scale(1) translateX(0)'
+                }}
+                onMouseDown={e => {
+                  ;(e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.97) translateX(0)'
+                }}
+                onMouseUp={e => {
+                  ;(e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.02) translateX(2px)'
+                }}
+                style={{
+                  background: isSelected ? 'rgba(0, 122, 255, 0.1)' : 'transparent',
+                  transition: 'background 0.15s ease, transform 0.15s cubic-bezier(0.34,1.56,0.64,1)',
+                  transform: 'scale(1) translateX(0)',
+                }}
+                className={cn(
+                  "w-full px-4 py-3 text-left text-sm rounded-lg mx-0",
+                  isSelected ? "text-accent font-semibold" : "text-foreground"
+                )}
+              >
+                <span className="capitalize">{option.label}</span>
+              </button>
+            )
+          })}
         </div>,
         document.body
       )}
