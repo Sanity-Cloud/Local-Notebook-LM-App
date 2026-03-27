@@ -1,6 +1,6 @@
 {
   "name": "local-notebooklm-app",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "Beautiful desktop app for Local-NotebookLM PDF to Audio generation",
   "author": "Gökdeniz Gülmez <goekdenizguelmez.ml@gmail.com>",
   "main": "dist-electron/main.js",

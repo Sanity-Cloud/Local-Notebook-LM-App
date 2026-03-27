@@ -369,8 +369,9 @@ ipcMain.handle('generate-audio', async (event, params) => {
   }
 
   return new Promise((resolve, reject) => {
-    // Determine Python paths
-    const isBundled = !!getBundledPythonPath()
+    // Determine Python paths — isBundled only true when the resolved command IS the bundled binary
+    const bundledPythonPath = getBundledPythonPath()
+    const isBundled = !!bundledPythonPath && python.command === bundledPythonPath
     const pythonPackagesDir = app.isPackaged
       ? path.join(process.resourcesPath, 'python-packages')
       : path.join(__dirname, '..', 'python-packages')
