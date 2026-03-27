@@ -345,7 +345,20 @@ function GlassSelect({ options, value, onChange, label, icon: Icon }: {
         <ChevronDown className={cn("w-4 h-4 text-foreground-muted transition-transform", isOpen && "rotate-180")} />
       </button>
       {isOpen && createPortal(
-        <div style={dropdownStyle} className="glass-panel rounded-xl overflow-hidden animate-scale-in shadow-glass-lg">
+        <div
+          style={{
+            ...dropdownStyle,
+            background: 'rgba(255, 255, 255, 0.62)',
+            backdropFilter: 'blur(60px) saturate(220%) brightness(1.08)',
+            WebkitBackdropFilter: 'blur(60px) saturate(220%) brightness(1.08)',
+            border: '1px solid rgba(255, 255, 255, 0.55)',
+            borderTop: '1px solid rgba(255, 255, 255, 0.8)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
+            borderRadius: '16px',
+            overflow: 'hidden',
+          }}
+          className="animate-scale-in"
+        >
           {options.map(option => (
             <button
               key={option.value}
@@ -353,11 +366,15 @@ function GlassSelect({ options, value, onChange, label, icon: Icon }: {
                 onChange(option.value)
                 setIsOpen(false)
               }}
+              style={value === option.value ? {
+                background: 'rgba(0, 122, 255, 0.1)',
+              } : undefined}
               className={cn(
-                "w-full px-4 py-3 text-left text-sm transition-colors",
+                "w-full px-4 py-3 text-left text-sm transition-all duration-150",
+                "hover:bg-white/40",
                 value === option.value
-                  ? "bg-accent/10 text-accent font-medium"
-                  : "text-foreground hover:bg-white/20 dark:hover:bg-white/10"
+                  ? "text-accent font-semibold"
+                  : "text-foreground"
               )}
             >
               <span className="capitalize">{option.label}</span>
