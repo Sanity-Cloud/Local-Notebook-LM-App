@@ -829,9 +829,7 @@ export default function App() {
               onClick={() => { setActiveTab('upload'); setPdfFile(null) }}
               className="flex items-center gap-3 hover:opacity-80 transition-opacity"
             >
-              <div className="w-9 h-9 rounded-xl bg-accent flex items-center justify-center shadow-lg shadow-accent/25">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
+              <img src="/logo.jpeg" alt="Logo" className="w-9 h-9 rounded-xl object-cover shadow-lg" />
               <span className="font-semibold text-lg tracking-tight">Local-NotebookLM-App</span>
             </button>
           </div>
