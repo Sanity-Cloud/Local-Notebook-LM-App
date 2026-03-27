@@ -284,6 +284,7 @@ function GlassSelect({ options, value, onChange, label, icon: Icon }: {
   const selected = options.find(o => o.value === value)
   const containerRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   const updatePosition = useCallback(() => {
     if (buttonRef.current) {
@@ -300,7 +301,11 @@ function GlassSelect({ options, value, onChange, label, icon: Icon }: {
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      if (
+        containerRef.current && !containerRef.current.contains(target) &&
+        dropdownRef.current && !dropdownRef.current.contains(target)
+      ) {
         setIsOpen(false)
       }
     }
@@ -346,6 +351,7 @@ function GlassSelect({ options, value, onChange, label, icon: Icon }: {
       </button>
       {isOpen && createPortal(
         <div
+          ref={dropdownRef}
           style={{
             ...dropdownStyle,
             background: 'rgba(255, 255, 255, 0.62)',
