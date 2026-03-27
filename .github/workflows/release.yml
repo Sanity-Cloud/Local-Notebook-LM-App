@@ -70,6 +70,8 @@ jobs:
         run: |
           find release -name "*.app" -maxdepth 3 -type d | while read app; do
             echo "Signing: $app"
+            # Ensure all binaries and dylibs are executable before signing
+            find "$app" -type f \( -name "python*" -o -name "*.so" -o -name "*.dylib" \) -exec chmod +x {} \;
             codesign --force --deep --sign - "$app"
             codesign --verify --deep --strict "$app" && echo "✓ Valid" || echo "⚠ Issue with $app"
           done

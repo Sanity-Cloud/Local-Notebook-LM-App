@@ -65,6 +65,24 @@ function saveConfig(config: typeof DEFAULT_CONFIG) {
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2))
 }
 
+function ensureDevPythonPackages(): void {
+  if (app.isPackaged) return // bundled via extraResources in production
+  const packagesDir = path.join(__dirname, '..', 'python-packages')
+  const requirementsFile = path.join(__dirname, '..', 'local_notebooklm', 'requirements.txt')
+  if (!fs.existsSync(packagesDir) && fs.existsSync(requirementsFile)) {
+    console.log('python-packages/ not found — installing dependencies...')
+    try {
+      execSync(
+        `python3.13 -m pip install --target "${packagesDir}" --upgrade -r "${requirementsFile}"`,
+        { stdio: 'inherit' }
+      )
+      console.log('Dependencies installed.')
+    } catch (e) {
+      console.error('Failed to auto-install Python packages:', e)
+    }
+  }
+}
+
 type PythonCommand = {
   command: string
   args: string[]
@@ -74,7 +92,8 @@ function canRunPython(command: string, args: string[] = []): boolean {
   try {
     execSync([command, ...args, '--version'].join(' '), { stdio: 'ignore' })
     return true
-  } catch {
+  } catch (e) {
+    console.log(`Python candidate failed: ${command} ${args.join(' ')}`, e)
     return false
   }
 }
@@ -115,17 +134,25 @@ function getPythonCommand(): PythonCommand {
     return { command: bundledPython, args: [] }
   }
 
-  // Fallback to system Python
+  // Fallback to system Python — prefer newer versions explicitly to avoid
+  // Xcode CLT python3 (3.9) which cannot load packages compiled for 3.13
   const candidates: PythonCommand[] = []
 
   if (process.platform === 'win32') {
     candidates.push(
+      { command: 'py', args: ['-3.13'] },
+      { command: 'py', args: ['-3.12'] },
       { command: 'py', args: ['-3'] },
+      { command: 'python3.13', args: [] },
+      { command: 'python3.12', args: [] },
       { command: 'python', args: [] },
       { command: 'python3', args: [] }
     )
   } else {
     candidates.push(
+      { command: 'python3.13', args: [] },
+      { command: 'python3.12', args: [] },
+      { command: 'python3.11', args: [] },
       { command: 'python3', args: [] },
       { command: 'python', args: [] }
     )
@@ -171,6 +198,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  ensureDevPythonPackages()
+
   protocol.handle('local-file', (request) => {
     const filePath = decodeURIComponent(request.url.slice('local-file://'.length))
 
