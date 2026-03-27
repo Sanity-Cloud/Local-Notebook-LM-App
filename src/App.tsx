@@ -679,6 +679,9 @@ export default function App() {
                     value={settings.style}
                     onChange={style => setSettings(s => ({ ...s, style }))}
                   />
+                  <p className="mt-2 text-xs text-foreground-muted">
+                    {STYLE_DESCRIPTIONS[settings.style]}
+                  </p>
                 </GlassCard>
 
                 <GlassCard className="p-5" intensity="light">
@@ -688,6 +691,9 @@ export default function App() {
                     value={settings.length}
                     onChange={length => setSettings(s => ({ ...s, length }))}
                   />
+                  <p className="mt-2 text-xs text-foreground-muted">
+                    {LENGTH_DESCRIPTIONS[settings.length]}
+                  </p>
                 </GlassCard>
 
                 <GlassCard className="p-5" intensity="light">
