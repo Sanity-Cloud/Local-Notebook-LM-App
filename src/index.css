@@ -549,3 +549,40 @@ body {
   background: var(--accent-light);
   color: var(--text-primary);
 }
+
+/* Glass dropdown scrollbar — invisible but functional */
+.glass-dropdown::-webkit-scrollbar {
+  display: none;
+}
+.glass-dropdown {
+  scrollbar-width: none;
+}
+
+/* Bounce-in for dropdown */
+@keyframes dropdownIn {
+  0%   { opacity: 0; transform: scale(0.94) translateY(-6px); }
+  60%  { opacity: 1; transform: scale(1.01) translateY(1px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.animate-dropdown-in {
+  animation: dropdownIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Ripple press */
+@keyframes pressRipple {
+  from { box-shadow: 0 0 0 0 var(--accent-glow); }
+  to   { box-shadow: 0 0 0 8px transparent; }
+}
+.press-ripple:active {
+  animation: pressRipple 0.35s ease-out;
+}
+
+/* Gentle float for background orbs */
+@keyframes floatOrb {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50%       { transform: translateY(-18px) scale(1.03); }
+}
+.animate-float-slow  { animation: floatOrb 8s ease-in-out infinite; }
+.animate-float-med   { animation: floatOrb 6s ease-in-out infinite 1.5s; }
+.animate-float-fast  { animation: floatOrb 5s ease-in-out infinite 3s; }
+

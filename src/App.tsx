@@ -182,7 +182,7 @@ function GlassCard({ children, className, hover = true, intensity = 'medium' }: 
     <div className={cn(
       "rounded-2xl border border-white/20 dark:border-white/10 shadow-glass",
       intensityStyles[intensity],
-      hover && "transition-all duration-300 hover:shadow-glass-lg hover:scale-[1.01] hover:bg-white/80 dark:hover:bg-black/70",
+      hover && "transition-all duration-300 ease-out hover:shadow-glass-lg hover:scale-[1.015] hover:bg-white/80 dark:hover:bg-black/70 active:scale-[0.99]",
       className
     )}>
       {children}
@@ -209,14 +209,15 @@ function GlassButton({
   const variants = {
     primary: cn(
       "bg-accent text-white shadow-lg shadow-accent/25",
-      "hover:shadow-accent/40 hover:scale-[1.02]",
-      "active:scale-[0.98]"
+      "hover:shadow-xl hover:shadow-accent/40 hover:scale-[1.03] hover:brightness-110",
+      "active:scale-[0.97] active:brightness-95"
     ),
     secondary: cn(
       "bg-white/50 dark:bg-white/10 border border-white/30 dark:border-white/20",
-      "text-foreground hover:bg-white/70 dark:hover:bg-white/20"
+      "text-foreground hover:bg-white/75 dark:hover:bg-white/20 hover:scale-[1.02] hover:shadow-md",
+      "active:scale-[0.98]"
     ),
-    ghost: "text-foreground-secondary hover:text-foreground hover:bg-white/30 dark:hover:bg-white/10",
+    ghost: "text-foreground-secondary hover:text-foreground hover:bg-white/30 dark:hover:bg-white/10 hover:scale-[1.05] active:scale-[0.95]",
   }
 
   return (
@@ -262,8 +263,8 @@ function GlassInput({ label, value, onChange, type = 'text', placeholder, icon: 
             "bg-white/40 dark:bg-white/5",
             "border border-white/30 dark:border-white/10",
             "placeholder:text-foreground-muted",
-            "focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent/50",
-            "transition-all duration-200"
+            "focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent/50 focus:bg-white/60",
+            "transition-all duration-200 hover:bg-white/55 dark:hover:bg-white/8 hover:border-white/40"
           )}
         />
       </div>
@@ -289,12 +290,21 @@ function GlassSelect({ options, value, onChange, label, icon: Icon }: {
   const updatePosition = useCallback(() => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
+      const viewportHeight = window.innerHeight
+      const spaceBelow = viewportHeight - rect.bottom
+      const spaceAbove = rect.top
+      const maxH = 280
+      const openBelow = spaceBelow >= 120 || spaceBelow >= spaceAbove
       setDropdownStyle({
         position: 'fixed',
-        top: rect.bottom + 8,
+        ...(openBelow
+          ? { top: rect.bottom + 8 }
+          : { bottom: viewportHeight - rect.top + 8 }),
         left: rect.left,
         width: rect.width,
         zIndex: 99999,
+        maxHeight: Math.min(maxH, openBelow ? spaceBelow - 16 : spaceAbove - 16),
+        overflowY: 'auto' as const,
       })
     }
   }, [])
@@ -341,9 +351,9 @@ function GlassSelect({ options, value, onChange, label, icon: Icon }: {
           "bg-white/40 dark:bg-white/5",
           "border border-white/30 dark:border-white/10",
           "flex items-center justify-between",
-          "hover:bg-white/60 dark:hover:bg-white/10",
-          "transition-all duration-200",
-          isOpen && "ring-2 ring-accent/50 border-accent/50"
+          "hover:bg-white/65 dark:hover:bg-white/12 hover:border-white/50 hover:shadow-sm",
+          "transition-all duration-200 active:scale-[0.98]",
+          isOpen && "ring-2 ring-accent/50 border-accent/50 bg-white/60"
         )}
       >
         <span className="capitalize text-foreground">{selected?.label}</span>
@@ -354,16 +364,16 @@ function GlassSelect({ options, value, onChange, label, icon: Icon }: {
           ref={dropdownRef}
           style={{
             ...dropdownStyle,
-            background: 'rgba(255, 255, 255, 0.62)',
-            backdropFilter: 'blur(60px) saturate(220%) brightness(1.08)',
-            WebkitBackdropFilter: 'blur(60px) saturate(220%) brightness(1.08)',
-            border: '1px solid rgba(255, 255, 255, 0.55)',
-            borderTop: '1px solid rgba(255, 255, 255, 0.8)',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
+            background: 'rgba(255, 255, 255, 0.68)',
+            backdropFilter: 'blur(72px) saturate(240%) brightness(1.1)',
+            WebkitBackdropFilter: 'blur(72px) saturate(240%) brightness(1.1)',
+            border: '1px solid rgba(255, 255, 255, 0.6)',
+            borderTop: '1px solid rgba(255, 255, 255, 0.85)',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.14), 0 6px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.95)',
             borderRadius: '16px',
-            overflow: 'hidden',
+            scrollbarWidth: 'none' as const,
           }}
-          className="animate-scale-in"
+          className="animate-dropdown-in glass-dropdown"
         >
           {options.map(option => (
             <button
@@ -568,9 +578,9 @@ export default function App() {
     <div className="min-h-screen bg-background text-foreground overflow-hidden">
       {/* Frosted Glass Background Orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-accent/20 blur-[120px] opacity-60" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-success/20 blur-[100px] opacity-50" />
-        <div className="absolute top-[40%] left-[60%] w-[400px] h-[400px] rounded-full bg-warning/10 blur-[80px] opacity-40" />
+        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-accent/20 blur-[120px] opacity-60 animate-float-slow" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-success/20 blur-[100px] opacity-50 animate-float-med" />
+        <div className="absolute top-[40%] left-[60%] w-[400px] h-[400px] rounded-full bg-warning/10 blur-[80px] opacity-40 animate-float-fast" />
       </div>
 
       {/* Header - Frosted Glass */}
@@ -591,21 +601,21 @@ export default function App() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => { setActiveTab('upload'); setPdfFile(null) }}
-              className="p-2.5 rounded-xl text-foreground-secondary hover:text-foreground hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
+              className="p-2.5 rounded-xl text-foreground-secondary hover:text-foreground hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-200 hover:scale-110 active:scale-95"
               title="Home"
             >
               <Home className="w-5 h-5" />
             </button>
             <button
               onClick={() => setShowHistory(true)}
-              className="p-2.5 rounded-xl text-foreground-secondary hover:text-foreground hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
+              className="p-2.5 rounded-xl text-foreground-secondary hover:text-foreground hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-200 hover:scale-110 active:scale-95"
               title="History"
             >
               <History className="w-5 h-5" />
             </button>
             <button
               onClick={() => setShowConfig(true)}
-              className="p-2.5 rounded-xl text-foreground-secondary hover:text-foreground hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
+              className="p-2.5 rounded-xl text-foreground-secondary hover:text-foreground hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-200 hover:scale-110 active:scale-95 hover:rotate-[20deg]"
               title="Settings"
             >
               <Settings className="w-5 h-5" />
@@ -708,10 +718,10 @@ export default function App() {
                           numSpeakers: format.speakers.includes(s.numSpeakers) ? s.numSpeakers : format.speakers[0]
                         }))}
                         className={cn(
-                          "p-4 rounded-xl border transition-all text-center backdrop-blur-sm",
+                          "p-4 rounded-xl border transition-all duration-200 text-center backdrop-blur-sm",
                           isActive
-                            ? "border-accent bg-accent/10 text-accent shadow-lg shadow-accent/10"
-                            : "border-white/20 dark:border-white/10 hover:border-accent/30 hover:bg-white/20 dark:hover:bg-white/5"
+                            ? "border-accent bg-accent/10 text-accent shadow-lg shadow-accent/10 scale-[1.03]"
+                            : "border-white/20 dark:border-white/10 hover:border-accent/40 hover:bg-white/25 dark:hover:bg-white/8 hover:scale-[1.04] hover:shadow-md active:scale-[0.97]"
                         )}
                       >
                         <Icon className="w-5 h-5 mx-auto mb-2" />
@@ -768,10 +778,10 @@ export default function App() {
                         key={num}
                         onClick={() => setSettings(s => ({ ...s, numSpeakers: num }))}
                         className={cn(
-                          "flex-1 py-2.5 rounded-xl text-sm font-medium transition-all backdrop-blur-sm",
+                          "flex-1 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 backdrop-blur-sm",
                           settings.numSpeakers === num
-                            ? "bg-accent text-white shadow-lg shadow-accent/25"
-                            : "bg-white/30 dark:bg-white/10 text-foreground-secondary hover:bg-white/50 dark:hover:bg-white/20"
+                            ? "bg-accent text-white shadow-lg shadow-accent/25 scale-[1.03]"
+                            : "bg-white/30 dark:bg-white/10 text-foreground-secondary hover:bg-white/55 dark:hover:bg-white/20 hover:scale-[1.04] hover:shadow-sm active:scale-[0.97]"
                         )}
                       >
                         {num}
