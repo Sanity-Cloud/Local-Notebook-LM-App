@@ -494,22 +494,36 @@ export default function App() {
       <header className="fixed top-0 left-0 right-0 z-50 glass">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-accent flex items-center justify-center shadow-lg shadow-accent/25">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-semibold text-lg tracking-tight">NotebookLM</span>
+            <button
+              onClick={() => { setActiveTab('upload'); setPdfFile(null) }}
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            >
+              <div className="w-9 h-9 rounded-xl bg-accent flex items-center justify-center shadow-lg shadow-accent/25">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-semibold text-lg tracking-tight">Local-NotebookLM-App</span>
+            </button>
           </div>
 
           <div className="flex items-center gap-2">
             <button
+              onClick={() => { setActiveTab('upload'); setPdfFile(null) }}
+              className="p-2.5 rounded-xl text-foreground-secondary hover:text-foreground hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
+              title="Home"
+            >
+              <Home className="w-5 h-5" />
+            </button>
+            <button
               onClick={() => setShowHistory(true)}
               className="p-2.5 rounded-xl text-foreground-secondary hover:text-foreground hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
+              title="History"
             >
               <History className="w-5 h-5" />
             </button>
             <button
               onClick={() => setShowConfig(true)}
               className="p-2.5 rounded-xl text-foreground-secondary hover:text-foreground hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
+              title="Settings"
             >
               <Settings className="w-5 h-5" />
             </button>
@@ -529,6 +543,9 @@ export default function App() {
                 </h1>
                 <p className="text-foreground-secondary text-lg">
                   Upload a PDF and we'll create a podcast-style conversation
+                </p>
+                <p className="text-sm text-foreground-muted mt-2">
+                  Built on top of <a href="https://github.com/Goekdeniz-Guelmez/Local-NotebookLM" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Local-NotebookLM</a> by Gökdeniz Gülmez
                 </p>
               </div>
 
@@ -722,7 +739,7 @@ export default function App() {
                   </p>
                 </div>
                 {!isGenerating && (
-                  <GlassButton variant="secondary" onClick={() => setActiveTab('settings')}>
+                  <GlassButton variant="secondary" onClick={() => setActiveTab('upload')}>
                     Back
                   </GlassButton>
                 )}
@@ -973,17 +990,65 @@ export default function App() {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-white/10 dark:border-white/5 flex justify-end gap-3">
-              <GlassButton variant="secondary" onClick={() => setShowConfig(false)}>
-                Cancel
-              </GlassButton>
-              <GlassButton onClick={handleSaveConfig}>
-                Save Settings
-              </GlassButton>
+            <div className="px-6 py-4 border-t border-white/10 dark:border-white/5 flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <a
+                  href="https://github.com/Goekdeniz-Guelmez/Local-NotebookLM"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-foreground-secondary hover:text-foreground transition-colors"
+                >
+                  <Github className="w-4 h-4" />
+                  Local-NotebookLM
+                </a>
+                <a
+                  href="https://github.com/sponsors/Goekdeniz-Guelmez"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-500/10 text-pink-500 hover:bg-pink-500/20 transition-colors text-sm font-medium"
+                >
+                  <Heart className="w-3.5 h-3.5" />
+                  Sponsor
+                </a>
+              </div>
+              <div className="flex gap-3">
+                <GlassButton variant="secondary" onClick={() => setShowConfig(false)}>
+                  Cancel
+                </GlassButton>
+                <GlassButton onClick={handleSaveConfig}>
+                  Save Settings
+                </GlassButton>
+              </div>
             </div>
           </GlassCard>
         </div>
       )}
+
+      {/* Footer */}
+      <footer className="fixed bottom-0 left-0 right-0 py-3 px-6 text-center">
+        <div className="flex items-center justify-center gap-4 text-xs text-foreground-muted">
+          <span>Local-NotebookLM-App by Gökdeniz Gülmez</span>
+          <span>·</span>
+          <a
+            href="https://github.com/Goekdeniz-Guelmez/Local-NotebookLM"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-foreground transition-colors"
+          >
+            Backend on GitHub
+          </a>
+          <span>·</span>
+          <a
+            href="https://github.com/sponsors/Goekdeniz-Guelmez"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 hover:text-pink-500 transition-colors"
+          >
+            <Heart className="w-3 h-3" />
+            Sponsor
+          </a>
+        </div>
+      </footer>
     </div>
   )
 }
