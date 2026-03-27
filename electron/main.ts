@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, dialog, shell, protocol } from 'electron'
-import { spawn, execSync } from 'child_process'
+import { spawn, spawnSync, execSync } from 'child_process'
 import * as path from 'path'
 import * as fs from 'fs'
 import * as os from 'os'
@@ -90,8 +90,8 @@ type PythonCommand = {
 
 function canRunPython(command: string, args: string[] = []): boolean {
   try {
-    execSync([command, ...args, '--version'].join(' '), { stdio: 'ignore' })
-    return true
+    const result = spawnSync(command, [...args, '--version'], { stdio: 'ignore', shell: false })
+    return result.status === 0
   } catch (e) {
     console.log(`Python candidate failed: ${command} ${args.join(' ')}`, e)
     return false

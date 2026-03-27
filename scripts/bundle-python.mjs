@@ -107,6 +107,16 @@ async function downloadFile(url, dest) {
 
 async function extractPythonRuntime() {
   const { platform, arch } = getPlatformInfo()
+
+  // Skip download if python-runtime already has a working Python binary
+  const existingPythonExe = platform === 'win32'
+    ? path.join(pythonDir, 'python.exe')
+    : path.join(pythonDir, 'bin', 'python3.13')
+  if (existsSync(existingPythonExe)) {
+    console.log('Existing Python runtime found — skipping download.')
+    return
+  }
+
   const url = PYTHON_BUILD_RELEASES[platform]?.[arch]
 
   if (!url) {
