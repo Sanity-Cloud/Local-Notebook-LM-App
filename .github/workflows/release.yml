@@ -59,7 +59,9 @@ jobs:
         run: npx tsc && npx vite build
 
       - name: Build app bundles (no DMG yet)
-        run: npx electron-builder --mac dir --arch arm64,x64
+        run: |
+          npx electron-builder --mac dir --arm64
+          npx electron-builder --mac dir --x64
         env:
           PYTHON_BIN: python3.13
           CSC_IDENTITY_AUTO_DISCOVERY: false
