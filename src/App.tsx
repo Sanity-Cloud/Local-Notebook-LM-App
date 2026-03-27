@@ -81,18 +81,48 @@ interface HistoryJob {
   errorMessage?: string
 }
 
-// Constants
+// Constants - All options from processor.py
 const FORMAT_TYPES = [
   { value: 'podcast', label: 'Podcast', icon: Mic2, speakers: [2, 3] },
   { value: 'interview', label: 'Interview', icon: Users, speakers: [2] },
   { value: 'summary', label: 'Summary', icon: FileText, speakers: [1] },
   { value: 'narration', label: 'Narration', icon: Sparkles, speakers: [1] },
+  { value: 'article', label: 'Article', icon: FileText, speakers: [1] },
+  { value: 'lecture', label: 'Lecture', icon: Mic2, speakers: [1] },
+  { value: 'tutorial', label: 'Tutorial', icon: CheckCircle2, speakers: [1, 2] },
   { value: 'panel-discussion', label: 'Panel', icon: Users, speakers: [3, 4, 5, 6] },
+  { value: 'q-and-a', label: 'Q&A', icon: Mic2, speakers: [2] },
+  { value: 'debate', label: 'Debate', icon: Users, speakers: [2, 3, 4] },
+  { value: 'meeting', label: 'Meeting', icon: Users, speakers: [2, 3, 4, 5] },
+  { value: 'analysis', label: 'Analysis', icon: FileText, speakers: [1, 2] },
 ]
 
-const STYLES = ['normal', 'formal', 'casual', 'enthusiastic', 'serious', 'humorous']
+const STYLES = ['normal', 'formal', 'casual', 'enthusiastic', 'serious', 'humorous', 'gen-z', 'technical']
 const LENGTHS = ['short', 'medium', 'long']
-const LANGUAGES = ['english', 'spanish', 'french', 'german', 'italian', 'chinese', 'japanese']
+const LANGUAGES = [
+  'english', 'spanish', 'french', 'german', 'italian', 'portuguese', 'dutch',
+  'chinese', 'japanese', 'korean', 'arabic', 'hindi', 'russian', 'turkish',
+  'polish', 'swedish', 'norwegian', 'danish', 'finnish', 'czech'
+]
+
+// Style descriptions from processor.py
+const STYLE_DESCRIPTIONS: Record<string, string> = {
+  normal: 'Balanced and natural conversational style',
+  formal: 'Professional and polished tone with proper grammar',
+  casual: 'Informal and relaxed with colloquial expressions',
+  enthusiastic: 'Energetic and engaging tone to captivate',
+  serious: 'Solemn and focused for important topics',
+  humorous: 'Light humor and wit to entertain while informing',
+  'gen-z': 'Gen Z slang, memes, and TikTok-era references',
+  technical: 'Precise, domain-specific language for experts'
+}
+
+// Length descriptions
+const LENGTH_DESCRIPTIONS: Record<string, string> = {
+  short: '2-5 minutes, concise and to the point',
+  medium: '5-10 minutes, balanced and informative',
+  long: '10+ minutes, comprehensive details'
+}
 
 // Auto Theme Hook - follows system preference
 function useAutoTheme() {
@@ -612,7 +642,7 @@ export default function App() {
               {/* Format Selection */}
               <GlassCard className="p-6" intensity="medium">
                 <h3 className="text-sm font-medium text-foreground-tertiary uppercase tracking-wider mb-4">Format</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                   {FORMAT_TYPES.map(format => {
                     const Icon = format.icon
                     const isActive = settings.formatType === format.value
@@ -928,23 +958,16 @@ export default function App() {
                     placeholder="kokoro"
                     icon={Mic}
                   />
-                  <GlassInput
-                    label="Default Voice Model"
-                    value={config.ttsVoiceModel}
-                    onChange={val => setConfig(c => ({ ...c, ttsVoiceModel: val }))}
-                    placeholder="alloy"
-                    icon={Volume2}
-                  />
                 </div>
               )}
 
               {/* Voice Settings */}
               {activeConfigTab === 'voices' && (
                 <div className="space-y-4 animate-fade-in">
-                  {['Speaker 1', 'Speaker 2', 'Speaker 3', 'Speaker 4', 'Speaker 5', 'Speaker 6', 'default'].map(speaker => (
+                  {['Speaker 1', 'Speaker 2', 'Speaker 3', 'Speaker 4', 'Speaker 5', 'Speaker 6'].map(speaker => (
                     <GlassInput
                       key={speaker}
-                      label={speaker === 'default' ? 'Default Voice' : speaker}
+                      label={speaker}
                       value={config.speakerVoices[speaker] || ''}
                       onChange={val => updateSpeakerVoice(speaker, val)}
                       placeholder="voice-name"
