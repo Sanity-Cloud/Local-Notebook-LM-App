@@ -829,7 +829,7 @@ export default function App() {
               onClick={() => { setActiveTab('upload'); setPdfFile(null) }}
               className="flex items-center gap-3 hover:opacity-80 transition-opacity"
             >
-              <img src="/logo.jpeg" alt="Logo" className="w-9 h-9 rounded-xl object-cover shadow-lg" />
+              <img src="/logo.png" alt="Logo" className="w-9 h-9 rounded-xl object-cover shadow-lg" />
               <span className="font-semibold text-lg tracking-tight">Local-NotebookLM-App</span>
             </button>
           </div>
