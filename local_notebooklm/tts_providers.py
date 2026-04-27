@@ -22,8 +22,8 @@ DEFAULT_TTS_PROVIDERS = {
     ),
     "voicebox": TtsProviderConfig(
         provider="voicebox",
-        base_url="http://127.0.0.1:17493/v1",
-        model="voicebox",
+        base_url="http://127.0.0.1:17493",
+        model="qwen",
         api_key="not-needed",
     ),
 }
@@ -44,10 +44,16 @@ def resolve_tts_provider(
         )
 
     default = DEFAULT_TTS_PROVIDERS[provider_key]
+    resolved_base_url = (base_url or default.base_url).rstrip("/")
+
+    # Voicebox is not OpenAI-compatible and does not use a /v1 base path.
+    # Keep this tolerant so stale saved Electron settings do not break routing.
+    if provider_key == "voicebox" and resolved_base_url.endswith("/v1"):
+        resolved_base_url = resolved_base_url[:-3].rstrip("/")
 
     return TtsProviderConfig(
         provider=provider_key,
-        base_url=(base_url or default.base_url).rstrip("/"),
+        base_url=resolved_base_url,
         model=model or default.model,
         api_key=api_key or default.api_key,
     )
