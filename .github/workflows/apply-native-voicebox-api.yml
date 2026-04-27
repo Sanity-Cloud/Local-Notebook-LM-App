@@ -1,0 +1,105 @@
+name: Apply native Voicebox API integration
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/apply-native-voicebox-api.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Patch source files for native Voicebox API
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def rw(path, fn):
+              p = Path(path)
+              s = p.read_text(encoding='utf-8')
+              ns = fn(s)
+              if ns != s:
+                  p.write_text(ns, encoding='utf-8')
+
+          def patch_processor(s: str) -> str:
+              s = s.replace(
+                  'from .tts_providers import resolve_tts_provider\n',
+                  'from .tts_providers import resolve_tts_provider\nfrom .voicebox_client import VoiceboxClient\n',
+              ) if 'from .voicebox_client import VoiceboxClient' not in s else s
+
+              old = '''    ollama_client = OpenAI(base_url="http://localhost:11434/v1", api_key="not-needed")  # Ollama API
+    tts_config = resolve_tts_provider(provider="voicebox", base_url=__import__("os").environ.get("TTS_API_URL") or None, model=__import__("os").environ.get("TTS_MODEL") or None, api_key=__import__("os").environ.get("TTS_API_KEY") or None)
+    kokoro_client = OpenAI(base_url=tts_config.base_url, api_key=tts_config.api_key)  # Local TTS API
+'''
+              new = '''    ollama_client = OpenAI(base_url="http://localhost:11434/v1", api_key="not-needed")  # Ollama API
+    tts_provider = __import__("os").environ.get("TTS_PROVIDER") or "voicebox"
+    tts_config = resolve_tts_provider(
+        provider=tts_provider,
+        base_url=__import__("os").environ.get("TTS_API_URL") or None,
+        model=__import__("os").environ.get("TTS_MODEL") or None,
+        api_key=__import__("os").environ.get("TTS_API_KEY") or None,
+    )
+    if tts_config.provider == "voicebox":
+        kokoro_client = VoiceboxClient(base_url=tts_config.base_url, api_key=tts_config.api_key)  # Native Voicebox API
+    else:
+        kokoro_client = OpenAI(base_url=tts_config.base_url, api_key=tts_config.api_key)  # OpenAI-compatible local TTS API
+'''
+              if old in s:
+                  s = s.replace(old, new)
+
+              s = s.replace(
+                  'audio_file = generate_tts_audio(transcript, kokoro_client, voices, output_dir)',
+                  'audio_file = generate_tts_audio(transcript, kokoro_client, voices, output_dir, tts_model=tts_config.model)',
+              )
+              return s
+
+          def patch_electron(s: str) -> str:
+              s = s.replace("ttsApiUrl: 'http://localhost:8880/v1',", "ttsApiUrl: 'http://127.0.0.1:17493',")
+              s = s.replace("ttsApiUrl: 'http://127.0.0.1:17493/v1',", "ttsApiUrl: 'http://127.0.0.1:17493',")
+              if "ttsProvider: 'voicebox'" not in s:
+                  s = s.replace("  ttsVoiceModel: 'alloy',\n", "  ttsVoiceModel: 'alloy',\n  ttsProvider: 'voicebox',\n")
+              if 'TTS_PROVIDER:' not in s:
+                  s = s.replace(
+                      "      TTS_VOICE_MODEL: appConfig.ttsVoiceModel || 'alloy',\n",
+                      "      TTS_VOICE_MODEL: appConfig.ttsVoiceModel || 'alloy',\n      TTS_PROVIDER: appConfig.ttsProvider || 'voicebox',\n",
+                  )
+              return s
+
+          def patch_app(s: str) -> str:
+              s = s.replace("ttsApiUrl: 'http://localhost:8880/v1',", "ttsApiUrl: 'http://127.0.0.1:17493',")
+              s = s.replace("http://127.0.0.1:17493/v1", "http://127.0.0.1:17493")
+              if "ttsProvider: 'voicebox'" not in s:
+                  s = s.replace("    ttsVoiceModel: 'alloy',\n", "    ttsVoiceModel: 'alloy',\n    ttsProvider: 'voicebox',\n")
+              return s
+
+          rw('local_notebooklm/processor.py', patch_processor)
+          rw('electron/main.ts', patch_electron)
+          rw('src/App.tsx', patch_app)
+
+          workflow = Path('.github/workflows/apply-native-voicebox-api.yml')
+          if workflow.exists():
+              workflow.unlink()
+          PY
+
+      - name: Commit native Voicebox API integration
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No native Voicebox API patch needed."
+          else
+            git commit -m "Use native Voicebox API for local TTS"
+            git push
+          fi
