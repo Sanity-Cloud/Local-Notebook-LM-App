@@ -9,7 +9,7 @@ from typing import List, Tuple, Literal, Optional, Any
 import PyPDF2
 import numpy as np
 import soundfile as sf
-from openai import OpenAI
+from openai import OpenAI`nfrom .tts_providers import resolve_tts_provider
 
 
 ALLOWED_LENGTHS = {"short", "medium", "long"}
@@ -650,7 +650,7 @@ def generate_audio(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     ollama_client = OpenAI(base_url="http://localhost:11434/v1", api_key="not-needed")  # Ollama API
-    kokoro_client = OpenAI(base_url="http://localhost:8880/v1", api_key="not-needed")  # Kokoro API
+    tts_config = resolve_tts_provider(provider=\"voicebox\"); kokoro_client = OpenAI(base_url=tts_config.base_url, api_key=tts_config.api_key)  # Kokoro API
 
     transcript = None
     transcript_json_path = output_dir / "transcript.json"

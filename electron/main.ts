@@ -73,7 +73,7 @@ function ensureDevPythonPackages(): void {
     console.log('python-packages/ not found — installing dependencies...')
     try {
       execSync(
-        `python3.13 -m pip install --target "${packagesDir}" --upgrade -r "${requirementsFile}"`,
+        `python -m pip install --target "${packagesDir}" --upgrade -r "${requirementsFile}"`,
         { stdio: 'inherit' }
       )
       console.log('Dependencies installed.')
