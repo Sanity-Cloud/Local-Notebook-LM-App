@@ -48,7 +48,7 @@ interface Config {
   ttsApiUrl: string
   ttsApiKey: string
   ttsModel: string
-  ttsVoiceModel: string
+  ttsVoiceModel: string; ttsProvider: "openai" | "kokoro" | "voicebox"
   speakerVoices: Record<string, string>
   defaultOutputDir: string
 }
@@ -1255,7 +1255,7 @@ export default function App() {
             <div className="p-6 max-h-[60vh] overflow-y-auto">
               {/* LLM Settings */}
               {activeConfigTab === 'llm' && (
-                <div className="space-y-4 animate-fade-in">
+                            <div className="space-y-4 animate-fade-in">`r`n                  <GlassSelect label="TTS Provider" options={[{value: "openai", label: "OpenAI Cloud"}, {value: "kokoro", label: "Kokoro Local"}, {value: "voicebox", label: "Voicebox Local"}]} value={config.ttsProvider} onChange={val => setConfig(c => ({...c, ttsProvider: val as any, ttsApiUrl: val === "voicebox" ? "http://127.0.0.1:17493/v1" : val === "kokoro" ? "http://127.0.0.1:58888/v1" : c.ttsApiUrl}))} />
                   <GlassInput
                     label="LLM API Base URL"
                     value={config.llmApiUrl}
@@ -1281,7 +1281,7 @@ export default function App() {
 
               {/* TTS Settings */}
               {activeConfigTab === 'tts' && (
-                <div className="space-y-4 animate-fade-in">
+                            <div className="space-y-4 animate-fade-in">`r`n                  <GlassSelect label="TTS Provider" options={[{value: "openai", label: "OpenAI Cloud"}, {value: "kokoro", label: "Kokoro Local"}, {value: "voicebox", label: "Voicebox Local"}]} value={config.ttsProvider} onChange={val => setConfig(c => ({...c, ttsProvider: val as any, ttsApiUrl: val === "voicebox" ? "http://127.0.0.1:17493/v1" : val === "kokoro" ? "http://127.0.0.1:58888/v1" : c.ttsApiUrl}))} />
                   <GlassInput
                     label="TTS API Base URL"
                     value={config.ttsApiUrl}
@@ -1309,7 +1309,7 @@ export default function App() {
 
               {/* Voice Settings */}
               {activeConfigTab === 'voices' && (
-                <div className="space-y-4 animate-fade-in">
+                            <div className="space-y-4 animate-fade-in">`r`n                  <GlassSelect label="TTS Provider" options={[{value: "openai", label: "OpenAI Cloud"}, {value: "kokoro", label: "Kokoro Local"}, {value: "voicebox", label: "Voicebox Local"}]} value={config.ttsProvider} onChange={val => setConfig(c => ({...c, ttsProvider: val as any, ttsApiUrl: val === "voicebox" ? "http://127.0.0.1:17493/v1" : val === "kokoro" ? "http://127.0.0.1:58888/v1" : c.ttsApiUrl}))} />
                   {['Speaker 1', 'Speaker 2', 'Speaker 3', 'Speaker 4', 'Speaker 5', 'Speaker 6'].map(speaker => (
                     <GlassInput
                       key={speaker}
@@ -1330,7 +1330,7 @@ export default function App() {
 
               {/* General Settings */}
               {activeConfigTab === 'general' && (
-                <div className="space-y-4 animate-fade-in">
+                            <div className="space-y-4 animate-fade-in">`r`n                  <GlassSelect label="TTS Provider" options={[{value: "openai", label: "OpenAI Cloud"}, {value: "kokoro", label: "Kokoro Local"}, {value: "voicebox", label: "Voicebox Local"}]} value={config.ttsProvider} onChange={val => setConfig(c => ({...c, ttsProvider: val as any, ttsApiUrl: val === "voicebox" ? "http://127.0.0.1:17493/v1" : val === "kokoro" ? "http://127.0.0.1:58888/v1" : c.ttsApiUrl}))} />
                   <div>
                     <label className="flex items-center gap-1.5 text-xs font-medium text-foreground-tertiary uppercase tracking-wider mb-1.5">
                       <Folder className="w-3.5 h-3.5" />
@@ -1524,3 +1524,4 @@ function AudioPlayer({ audioPath, fileName }: { audioPath: string; fileName: str
     </div>
   )
 }
+
