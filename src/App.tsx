@@ -615,10 +615,11 @@ export default function App() {
   const [config, setConfig] = useState<Config>({
     llmApiUrl: 'http://localhost:11434/v1',
     llmApiKey: '',
-    ttsApiUrl: 'http://localhost:8880/v1',
+    ttsApiUrl: 'http://127.0.0.1:17493/v1',
     ttsApiKey: '',
     ttsModel: 'kokoro',
     ttsVoiceModel: 'alloy',
+    ttsProvider: 'voicebox',
     speakerVoices: {
       'Speaker 1': 'af_bella(1.4)+af_sky(0.8)',
       'Speaker 2': 'am_michael+am_fenrir',
@@ -1256,7 +1257,8 @@ export default function App() {
             <div className="p-6 max-h-[60vh] overflow-y-auto">
               {/* LLM Settings */}
               {activeConfigTab === 'llm' && (
-                            <div className="space-y-4 animate-fade-in">`r`n                  <GlassSelect label="TTS Provider" options={[
+                            <div className="space-y-4 animate-fade-in">
+                  <GlassSelect label="TTS Provider" options={[
   { value: "kokoro", label: "Kokoro Local" },
   { value: "voicebox", label: "Voicebox Local" },
 ]} value={config.ttsProvider} onChange={val =>
@@ -1294,7 +1296,8 @@ export default function App() {
 
               {/* TTS Settings */}
               {activeConfigTab === 'tts' && (
-                            <div className="space-y-4 animate-fade-in">`r`n                  <GlassSelect label="TTS Provider" options={[
+                            <div className="space-y-4 animate-fade-in">
+                  <GlassSelect label="TTS Provider" options={[
   { value: "kokoro", label: "Kokoro Local" },
   { value: "voicebox", label: "Voicebox Local" },
 ]} value={config.ttsProvider} onChange={val =>
@@ -1334,7 +1337,8 @@ export default function App() {
 
               {/* Voice Settings */}
               {activeConfigTab === 'voices' && (
-                            <div className="space-y-4 animate-fade-in">`r`n                  <GlassSelect label="TTS Provider" options={[
+                            <div className="space-y-4 animate-fade-in">
+                  <GlassSelect label="TTS Provider" options={[
   { value: "kokoro", label: "Kokoro Local" },
   { value: "voicebox", label: "Voicebox Local" },
 ]} value={config.ttsProvider} onChange={val =>
@@ -1367,7 +1371,8 @@ export default function App() {
 
               {/* General Settings */}
               {activeConfigTab === 'general' && (
-                            <div className="space-y-4 animate-fade-in">`r`n                  <GlassSelect label="TTS Provider" options={[
+                            <div className="space-y-4 animate-fade-in">
+                  <GlassSelect label="TTS Provider" options={[
   { value: "kokoro", label: "Kokoro Local" },
   { value: "voicebox", label: "Voicebox Local" },
 ]} value={config.ttsProvider} onChange={val =>

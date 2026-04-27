@@ -1,6 +1,6 @@
 import argparse, sys
 
-from .processor_bootstrap import generate_audio
+from .processor import generate_audio
 
 
 def main():
